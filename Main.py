@@ -1,11 +1,18 @@
 import os
 import pygame
+
 pygame.init()
 
+# Load images
 images = [pygame.transform.scale(pygame.image.load(os.path.join("images", "bear1.png")), (64, 64)),
-              pygame.transform.scale(pygame.image.load(os.path.join("images", "bear2.png")), (64, 64))]
+          pygame.transform.scale(pygame.image.load(os.path.join("images", "bear2.png")), (64, 64))]
 imagesobs = [pygame.transform.scale(pygame.image.load(os.path.join("images", "goal.png")), (128, 128))]
-             
+
+# Load sound
+jump_sound = pygame.mixer.Sound(os.path.join("sounds", "disc_jump.wav"))
+
+
+
 SIZE = WIDTH, HEIGHT = 800, 600
 BACKGROUND_COLOR = pygame.Color('black')
 FPS = 60
@@ -19,83 +26,89 @@ isJump = False
 jumpCount = 10
 
 class Basket(pygame.sprite.Sprite):
-    def __init__(self, image):
+    def __init__(self, image, x):
         super(Basket, self).__init__()
 
-        size = (128, 128)  # Storleken på den förstorade bilden
-        self.rect = pygame.Rect((750, 400), size)  # Skapa en rektangel för sprite-positionen och storleken
-        self.images = image  # Lista med alla bilder för sprite-animationen
-        self.index = 0  # Index för den aktuella bilden i animationen
-        self.image = image[self.index]  # Aktuell bild som ska visas
+        size = (128, 128)  # Size of the enlarged image
+        self.rect = pygame.Rect((x, 400), size)  # Create a rectangle for sprite position and size
+        self.images = image  # List of all images for sprite animation
+        self.index = 0  # Index for the current image in the animation
+        self.image = image[self.index]  # Current image to display
         
-        self.velocity = pygame.math.Vector2(-1, 0)  # Sprite-hastighet i x- och y-riktning
+        self.velocity = pygame.math.Vector2(-10, 0)  # Sprite velocity in x and y direction
 
-        self.animation_time = 0.2  # Tid mellan varje bildbyte i sekunder
-        self.current_time = 0  # Aktuell tid sedan senaste bildbyte
+        self.animation_time = 0.2  # Time between each image change in seconds
+        self.current_time = 0  # Current time since last image change
+        self.scored = False  # Flag to track whether the basket has been scored
 
     def update(self, dt):
-        # Uppdatera sprite-tilståndet baserat på tidsskillnaden dt
+        # Update sprite state based on the time difference dt
         self.update_time_dependent(dt)
         if self.rect.x < -100:
-            self.kill()  # Ta bort hindret från sprite-gruppen
-            
-            
-        # Skriv ut x-koordinaten
-        print("X-coordinate:", self.rect.x)
+            self.kill()  # Remove the obstacle from the sprite group
 
     def update_time_dependent(self, dt):
-        # Uppdatera aktuell tid
+        # Update current time
         self.current_time += dt
-        # Byt bild om det har gått tillräckligt med tid sedan förra bildbytet
+        # Change image if enough time has passed since the last image change
         if self.current_time >= self.animation_time:
-            self.current_time = 0  # Återställ tiden
-            self.index = (self.index + 1) % len(self.images)  # Gå till nästa bild i sekvensen
-            self.image = self.images[self.index]  # Uppdatera aktuell bild
+            self.current_time = 0  # Reset the time
+            self.index = (self.index + 1) % len(self.images)  # Go to the next image in the sequence
+            self.image = self.images[self.index]  # Update current image
 
-        # Flytta sprite baserat på dess hastighet
+        # Move sprite based on its velocity
         self.rect.move_ip(*self.velocity)
-
-
 
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, image):
         super(AnimatedSprite, self).__init__()
 
-        size = (128, 128)  # Storleken på den förstorade bilden
-        self.rect = pygame.Rect((100, 450), size)  # Skapa en rektangel för sprite-positionen och storleken
-        self.images = image  # Lista med alla bilder för sprite-animationen
-        self.index = 0  # Index för den aktuella bilden i animationen
-        self.image = image[self.index]  # Aktuell bild som ska visas
+        size = (128, 128)  # Size of the enlarged image
+        self.rect = pygame.Rect((100, 450), size)  # Create a rectangle for sprite position and size
+        self.images = image  # List of all images for sprite animation
+        self.index = 0  # Index for the current image in the animation
+        self.image = image[self.index]  # Current image to display
         
-        self.velocity = pygame.math.Vector2(0, 0)  # Sprite-hastighet i x- och y-riktning
+        self.velocity = pygame.math.Vector2(0, 0)  # Sprite velocity in x and y direction
 
-        self.animation_time = 0.2  # Tid mellan varje bildbyte i sekunder
-        self.current_time = 0  # Aktuell tid sedan senaste bildbyte
+        self.animation_time = 0.2  # Time between each image change in seconds
+        self.current_time = 0  # Current time since last image change
 
     def update(self, dt):
-        # Uppdatera sprite-tilståndet baserat på tidsskillnaden dt
+        # Update sprite state based on the time difference dt
         self.update_time_dependent(dt)
-        
 
     def update_time_dependent(self, dt):
-        # Uppdatera aktuell tid
+        # Update current time
         self.current_time += dt
-        # Byt bild om det har gått tillräckligt med tid sedan förra bildbytet
+        # Change image if enough time has passed since the last image change
         if self.current_time >= self.animation_time:
-            self.current_time = 0  # Återställ tiden
-            self.index = (self.index + 1) % len(self.images)  # Gå till nästa bild i sekvensen
-            self.image = self.images[self.index]  # Uppdatera aktuell bild
+            self.current_time = 0  # Reset the time
+            self.index = (self.index + 1) % len(self.images)  # Go to the next image in the sequence
+            self.image = self.images[self.index]  # Update current image
 
-        # Flytta sprite baserat på dess hastighet
+        # Move sprite based on its velocity
         self.rect.move_ip(*self.velocity)
+
+def display_score(score):
+    font = pygame.font.SysFont("Kristen ITC", 36)
+    text = font.render("Score: " + str(score), True, pygame.Color('white'))
+    text_rect = text.get_rect(center=(WIDTH // 10, HEIGHT // 2))
+    screen.blit(text, text_rect)
 
 def main():
     global isJump  # Declare isJump as global within the function
-   
+    global score
+
     player = AnimatedSprite(image=images)
-    basket = Basket(image=imagesobs)
-    
-    all_sprites = pygame.sprite.Group(basket, player)  # Lägg till både spelaren och hindret i sprite-gruppen
+    baskets = []  # List to hold multiple basket instances
+    basket_spawn_time = 2  # Time interval to spawn a new basket (in seconds)
+    spawn_timer = basket_spawn_time  # Timer to keep track of when to spawn a new basket
+    x_offset = 150  # X offset between consecutive baskets
+    initial_x = 750  # Initial x position of the first basket
+    score = 0  # Player's score
+
+    all_sprites = pygame.sprite.Group(player)  # Add player to sprite group
 
     running = True
     while running:
@@ -109,6 +122,8 @@ def main():
                     if not isJump:
                         isJump = True
                         jumpCount = 10
+                        # Play jump sound
+                        jump_sound.play()
 
         if isJump:
             if jumpCount >= -10:
@@ -116,17 +131,43 @@ def main():
                 if jumpCount < 0:
                     neg = -1
                 player.rect.y -= (jumpCount ** 2) * 0.5 * neg
-                jumpCount -= 1
+                jumpCount -= 0.8
             else:
                 isJump = False
                 jumpCount = 10
                 # Reset Y coordinate to initial Y coordinate
                 player.rect.y = 450
 
-        all_sprites.update(dt)  # Anropa update() med argument dt
+        # Update spawn timer
+        spawn_timer -= dt
+        if spawn_timer <= 0:
+            # Spawn a new basket
+            basket = Basket(image=imagesobs, x=initial_x)
+            baskets.append(basket)
+            all_sprites.add(basket)
+            # Reset spawn timer
+            spawn_timer = basket_spawn_time
+            # Adjust initial_x for the next basket
+            initial_x += x_offset
+
+        # Check for collisions between player and baskets
+        for basket in baskets:
+            if basket.rect.left < player.rect.right and not basket.scored:
+                basket.scored = True
+                score += 1
+                print("Score:", score)
+
+        all_sprites.update(dt)  # Call update() with argument dt
         screen.fill(BACKGROUND_COLOR)
         all_sprites.draw(screen)
+
+        # Display score
+        display_score(score)
+
         pygame.display.update()
+
+
+
 
 if __name__ == '__main__':
     main()
